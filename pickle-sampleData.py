@@ -8,3 +8,10 @@
 #quick pandas sectioning off
 
 print("hello")
+
+from datetime import date
+from datetime import datetime
+
+import requests
+import json
+
