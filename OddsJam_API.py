@@ -23,3 +23,5 @@ def JAM_API():
     b = a[0]
     return b
 
+c = JAM_API
+print(c)
