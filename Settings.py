@@ -3,11 +3,19 @@ from __future__ import print_function
 from datetime import date
 from datetime import datetime
 
+import sys
 import json
 import requests
 import time
 import sys
 import os
+
+
+# The sys.prefix attribute returns the installation prefix of the current Python environment
+virtual_environment_path = sys.prefix
+virtual_environment_name = os.path.basename(virtual_environment_path)
+print("Environment location:", virtual_environment_name)
+print("")
 
 'META DATA'
 api_key = 'e6a9e9cfd798098ed200b73cb0201f60'
@@ -20,20 +28,36 @@ ODDS_FORMAT = 'american' # decimal | american
 DATE_FORMAT = 'iso' # iso | unix
 
 
+print("Python Location:", sys.executable)
+print("")
+#print(sys.prefix)
+
 
 'IMPORT MODULE LOGIC'
-file_path = requests.__file__ #use requests module to test the path
+file_path = requests.__file__  #use requests module to test the path
 dir = os.path.dirname(file_path)
-print("Current File Path: ",__file__)
+json_module = sys.modules['json']
+json_module_path = os.path.abspath(json_module.__file__)
+
+
+print("Current Script File Path: ",__file__)
+print("")
+#print("Packages Modules File Path", json_module_path)
 print("")
 print(f"Import path: {dir}")
 print("")
 print("Environmental Search Paths:", *sys.path,sep='\n')    
 
-'GLOBALS'
-print()
+'GLOBALS VARIABLE PRINTOUTS'
+#print()
 #print("Global Variables:", *globals(),sep='\n')    
 
-#Big Picture Loan with Brian H and Amy Bane due 12/19
-#Petsense with Mike Stern 
-#KEH
+
+
+
+# Set the path to the directory you want to list
+# directory_path = '/Users/anaconda3/lib/python3.8/site-packages/'
+# # Use the listdir() function to get a list of the files in the directory
+# files = os.listdir(directory_path)
+# # Print the list of files
+# print(files)

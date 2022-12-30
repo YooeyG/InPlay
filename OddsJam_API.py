@@ -1,12 +1,5 @@
-#import Settings as s
-#import sys
-#print(sys.path)
-
-#from Settings import api_key, API_KEY, SPORT, REGIONS, MARKETS, ODDS_FORMAT, DATE_FORMAT, requests
-
-#print("This is Odds Jam")
-#print("Global Variables:", *globals(),sep='\n')    
-
+# Import the necessary objects, functions, and variables from the settings module
+from Settings import API_KEY, REGIONS, MARKETS, ODDS_FORMAT, DATE_FORMAT, requests
 
 def JAM_API():
     odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?', params={
@@ -30,5 +23,3 @@ def JAM_API():
     b = a[0]
     return b
 
-
-#print("Global Variables:", *globals(),sep='\n')    
