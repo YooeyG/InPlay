@@ -47,6 +47,7 @@ print("")
 print(f"Import path: {dir}")
 print("")
 print("Environmental Search Paths:", *sys.path,sep='\n')    
+print("")
 
 'GLOBALS VARIABLE PRINTOUTS'
 #print()

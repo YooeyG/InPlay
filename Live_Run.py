@@ -1,6 +1,5 @@
 import Settings as s
 import sys
-print(sys.path)
 import pandas as pd
 import datetime
 from datetime import date
@@ -15,57 +14,67 @@ import GameSchedules
 
 from Settings import api_key, API_KEY, SPORT, REGIONS, MARKETS, ODDS_FORMAT, DATE_FORMAT, requests
 from OddsJam_API import JAM_API
+import pickle
+
+# Open the file in binary mode
+#with open('c.pkl', 'rb') as f:
+#    c = pickle.load(f)
+#Write in binary mode
+#    pickle.dump(c, f)
 
 
 
-n = 1
-z = 1
+#NEXT STEP IS TO CREATE THE LOOP TO APPEND
+#LOGIC TO START GRAPHING A GAME
+   
+
+n = 4
+z = 0
 
 while n > 0:
     if n < 5:
-        time.sleep(5)
+        time.sleep(1)
     
-    c = JAM_API()
+    #serialization pickle file
+    #c = JAM_API()
+    with open('c.pkl', 'rb') as f:
+        c = pickle.load(f)
+        #print(c)
+
     df = pd.Series(flatten_json(c)).to_frame()
-    a = data_prep(df)
-    a['TimeStamp'] = datetime.now() 
-    #print(len(a.columns.tolist()))
+    df_a = data_prep(df)
 
-    #Commence Compare
-    commence(c)
+    #ACQUIRE PRE GAME OR START TIME OR LIVE GAME - LISTS LIVE TIME ALSO
+    commence_df = commence(c)
+    #print(commence_df)
 
-    #ACQUIRE PRE GAME OR START TIME OR LIVE GAME
-    #a['Gametime'] =     #ACQUIRE PRE GAME OR START TIME OR LIVE GAME
-    #ACQUIRE PRE GAME OR START TIME OR LIVE GAME
-
-    #Optional Print Loop
-    t = a.iloc[0][11]
-    print('Time Stamp',t)
-
-    rslt_df = a.loc[a['Sports Book'] == 'DraftKings'] #Flexible choice
+    rslt_df = df_a.loc[df_a['Sports Book'] == 'DraftKings'] #Flexible choice
     rslt_dff = rslt_df.loc[rslt_df['Bet Type'] == 'h2h'] #Flexible choice
-    rslt_dff = rslt_dff.loc[rslt_dff['Team 2'] == 'New York Knicks'] #Flexible choice
-    print(rslt_dff[['TimeStamp','Team 1', 'Moneyline 1', 'Team 2', 'Moneyline 2']])
-    #End Optional Print Loop
+    rslt_dff = rslt_dff[['Sports Book','Value','Team 1', 'Moneyline 1', 'Team 2', 'Moneyline 2']]
+        
+    result_df = commence_df.merge(rslt_dff, on='Value', how='inner')
+    print(result_df)
 
-
-    if z == 1:
-        #Create New DataFrame
-        colnames = a.columns.tolist()
-        newdf = pd.DataFrame(columns= colnames)
-        newdf = newdf.append(a)
-    else:
-        newdf = newdf.append(a)
+    #INITIALIZE DATAFRAME
+    if z == 0:
+        df_livefeed = pd.DataFrame(columns=result_df.columns)
+    
+    df_livefeed = df_livefeed.append(result_df)
 
     n -= 1
     z += 1
 
     if n == 0:
         break
-    print(n)
+
+print("")
 print('Loop ended.')
-print(datetime.now())
+print("")
 
 
+print('Open a file for writing in binary mode')
 
-I have modules imported into a module named settings.py and I want to use those same imported modules into my new module named Live_Run how do I do that so that I don't have to keep reimporting the modules
+with open('df_livefeed.pkl', 'wb') as f:
+    pickle.dump(df_livefeed, f)
+
+

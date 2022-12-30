@@ -1,5 +1,6 @@
 # Import the necessary objects, functions, and variables from the settings module
 from Settings import API_KEY, REGIONS, MARKETS, ODDS_FORMAT, DATE_FORMAT, requests
+import pandas as pd
 
 def JAM_API():
     odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?', params={
@@ -23,5 +24,5 @@ def JAM_API():
     b = a[0]
     return b
 
-c = JAM_API
-print(c)
+#c = JAM_API()
+#print(c)
