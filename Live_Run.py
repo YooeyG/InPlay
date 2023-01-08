@@ -15,6 +15,7 @@ import GameSchedules
 from Settings import api_key, API_KEY, SPORT, REGIONS, MARKETS, ODDS_FORMAT, DATE_FORMAT, requests
 from OddsJam_API import JAM_API
 import pickle
+from SportsFeed_API import SportsFeed
 
 # Open the file in binary mode
 #with open('c.pkl', 'rb') as f:
@@ -24,7 +25,7 @@ import pickle
 
    
 
-n = 5
+n = 1
 z = 0
 
 q = n
@@ -35,12 +36,17 @@ while n > 0:
     if n < q:
         time.sleep(15)
     
-    #serialization pickle file
+    #ODDS JAM API
     c = JAM_API()
+    #serialization pickle file
     #with open('c.pkl', 'rb') as f:
         #c = pickle.load(f)
         #print(c)
 
+    #SPORTS FEED API
+    livescore = SportsFeed()
+
+    #ODDS JAM DATA PREP#
     df = pd.Series(flatten_json(c)).to_frame()
     df_a = data_prep(df)
 
@@ -60,6 +66,11 @@ while n > 0:
     if z == 0:
         df_livefeed = pd.DataFrame(columns=result_df.columns)
     df_livefeed = df_livefeed.append(result_df)
+
+    #SPORTFEED DATA PREP#
+    dfz = pd.Series(flatten_json(livescore)).to_frame()
+    #CONTINUE HERE
+
 
     n -= 1
     z += 1

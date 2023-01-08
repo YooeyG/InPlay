@@ -1,32 +1,5 @@
-from Settings import api_key, STATUS, LEAGUE, today_string, requests
 import pandas as pd
-
-def SportsFeed():
-
-    url = "https://sportspage-feeds.p.rapidapi.com/games"
-
-    querystring = {"status":STATUS, "league":LEAGUE, "date":today_string}
-
-    headers = {
-        "X-RapidAPI-Key": "c56058d507mshe08ef7f5a175d0cp194176jsn8122f72c24d7",
-        "X-RapidAPI-Host": "sportspage-feeds.p.rapidapi.com"
-    }
-
-    response = requests.request("GET", url, headers=headers, params=querystring)
-    odds_json_sfl = response.json()
-
-    dfs = pd.Series(flatten_json(odds_json_sfl)).to_frame()
-    dfs.reset_index(inplace=True)
-    dfs = dfs.rename(columns={'index': 'Metric',0:'Value'})
-
-    return dfs
-
-
-def process_metric_name(name):
-    if 'results_' in name:
-        return name[10:]  # keep the characters starting from the 11th position
-    else:
-        return name
+from SportsFeed_API import process_metric_name
 
 def DF_SportsFeed_Prep(df):
     dfs['Metric'] = dfs['Metric'].apply(process_metric_name)
