@@ -20,12 +20,28 @@ print("")
 'META DATA'
 api_key = 'e6a9e9cfd798098ed200b73cb0201f60'
 
+
+'ODDS JAM API SETTINGS'
 API_KEY = api_key
-SPORT = 'NBA' # use the sport_key from the /sports endpoint below, or use 'upcoming' to see the next 8 games across all sports
+SPORT = 'NBA' # use the sport_key from the /sports endpoint below, or use 'upcoming' to see the next 8 games across allsports
 REGIONS = 'us' # uk | us | eu | au. Multiple can be specified if comma delimited
 MARKETS = 'h2h,spreads' # h2h | spreads | totals. Multiple can be specified if comma delimited
 ODDS_FORMAT = 'american' # decimal | american
 DATE_FORMAT = 'iso' # iso | unix
+
+
+'SPORTSFEED API SETTINGS'
+STATUS = 'scheduled' #scheduled, in progress, final, canceled, delayed
+LEAGUE = 'NBA' #League Options NFL, NBA, MLB, NHL, NCAAF, or NCAAB
+
+#DATE
+today = datetime.now()
+today_string = today.strftime("%Y-%m-%d")
+print("Today's Date:", today_string)
+
+
+
+
 
 
 print("Python Location:", sys.executable)

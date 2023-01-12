@@ -1,5 +1,15 @@
 from Settings import api_key, STATUS, LEAGUE, today_string, requests
 import pandas as pd
+from Flatten_Dict import flatten_json
+
+
+def process_metric_name(name):
+    if 'results_' in name:
+        return name[10:]  # keep the characters starting from the 11th position
+    else:
+        return name
+
+
 
 def SportsFeed():
 
@@ -16,19 +26,12 @@ def SportsFeed():
     odds_json_sfl = response.json()
 
     dfs = pd.Series(flatten_json(odds_json_sfl)).to_frame()
+
     dfs.reset_index(inplace=True)
     dfs = dfs.rename(columns={'index': 'Metric',0:'Value'})
 
-    return dfs
+#    return dfs
 
-
-def process_metric_name(name):
-    if 'results_' in name:
-        return name[10:]  # keep the characters starting from the 11th position
-    else:
-        return name
-
-def DF_SportsFeed_Prep(df):
     dfs['Metric'] = dfs['Metric'].apply(process_metric_name)
 
     dfs = dfs[dfs['Metric'].isin(['details_league', 'gameId', 'lastUpdated', 'scoreboard_currentPeriod', 
@@ -62,3 +65,11 @@ def DF_SportsFeed_Prep(df):
     dfz = dfz[['lastUpdated','scoreboard_currentPeriod','scoreboard_periodTimeRemaining','teams_home_team', 'scoreboard_score_home', 'teams_away_team','scoreboard_score_away']]
 
     return dfz
+
+
+#s = SportsFeed()
+#print(s)
+
+
+
+

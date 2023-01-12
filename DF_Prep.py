@@ -1,226 +1,122 @@
 import pandas as pd
 import numpy as np
+import pytz
+import datetime
+from datetime import date
+from datetime import datetime, timedelta
+import time
 
 def data_prep(df):
+ 
     #EXTRACT INDEX TO COLUMN
     df.reset_index(inplace=True)
 
-    df.columns = ['Dict_Tree','Value']
+    #Column Rename
+    df.columns = ['metric', 'value']
 
-    #SPLIT LOGIC
-    df_new = df['Dict_Tree'].str.split("_", n = 7, expand = True) # LOGIC FLAW IS ASSUMING 5 "_", should create a count structure
+    # Split the first column on '_' and assign the values to new columns
+    df[['larger_group', 'subgroup']] = df['metric'].str.split("_", expand=True,n=1)
 
-    #RENNAME COLUMNS 
-    df_new.columns = ['Level 1', 'Bookmaker', 'Level 2', 'Bet Type', 'Level 3', 'Outcomes','Level 4','Moneyline'] 
 
-    #MERGE SPLIT COLUMNS BACK TO ORIGINAL DATAFRAME
-    df = df.join(df_new)
+    # Create new columns for the larger group and subgroup
+    df['subgroup2'] = df['subgroup'].where(df['subgroup'].str.startswith("bookmakers"), None)
+    df['bookmaker_name'] = df['subgroup2'].str.split("_").str[1]
+    df['subgroup2'] = df['subgroup2'].str.replace('[\d_\s]','')
+    df['h2h_spread'] = df['metric'].str.split("_")
+    df['h2h_spread2'] = df['h2h_spread'].str[4] if len(df['h2h_spread'])>=5 else np.nan
 
-    del df_new
 
+    #TEAM 1 and TEAM 2
+    df['Team1_2'] = df['h2h_spread'].str[6] if len(df['h2h_spread'])>=7 else np.nan
 
-    ####################################################################3
-    #CONDITIONAL COUNT LOGIC
-    ####################################################################3
 
-    #put columns in list
+    #################EXTRACT THE ROWS WITH SPECIFIC IDENTIFIERS IN A SEPARATE DATAFRAME AND MERGE AT THE END
+    # Create a boolean mask that is True for rows that contain the desired values in the column 'metric'
+    mask1 = df['subgroup'].isin(['id','sport_key', 'sport_title', 'commence_time', 'home_team', 'away_team'])
+    mask2 = df['subgroup2'].isin(['bookmakerskey', 'bookmakerstitle', 'bookmakerslastupdate'])
+    mask3 = df['subgroup2'].isin(['bookmakersmarketskey','value'])
 
-    colnames = df.columns.tolist()
-    #print(colnames)
+    # Use the mask to filter the rows
+    df_filtered = df.loc[mask1]
+    df_Book = df.loc[mask2]
+    df_Moneyline = df.loc[mask3]
 
-    dff = df.copy()
+    df = df[~df['subgroup2'].isin(['bookmakerskey','bookmakerstitle','bookmakerslastupdate'])]
+    df = df[~pd.isna(df['subgroup2'])]
+    df.drop(columns=['h2h_spread'], inplace=True)
 
 
-    for x in colnames:
-        dff[x] = np.where(dff[x].isnull(),0,1)
-        
+    df = df[~df['Team1_2'].isin(['update'])]
+    df = df[~pd.isna(df['Team1_2'])]
 
+    df["Team1_2"] = df["subgroup2"].astype(str) + " " + df["Team1_2"].astype(str)
+    df=df.rename(columns={'Team1_2': 'Final_Team_column'})
 
-    dff['Full Count']=0
-    for x in colnames:
-        dff['Full Count'] = dff['Full Count'] + dff[x]
 
 
-    dff = dff['Full Count']
+    #This is the cross tab function:
+    cross_tab = pd.crosstab(index=[df['larger_group'],df['bookmaker_name'],df['h2h_spread2']], columns=df['Final_Team_column'], values=df['value'], aggfunc='first')
+    cross_tab_filtered = pd.crosstab(index=[df_filtered['larger_group']], columns=df_filtered['subgroup'], values=df_filtered['value'], aggfunc='first')
+    cross_tab_Book = pd.crosstab(index=[df_Book['larger_group'],df_Book['bookmaker_name']], columns=df_Book['subgroup2'], values=df_Book['value'], aggfunc='first')
+    crosstab_Moneyline = df_Moneyline[['value','larger_group','h2h_spread2','bookmaker_name']]
 
+    #THIS IS WHERE WE WOULD REMERGE THE DATA (CROSS_TAB vs. CROSSTAB MONEYLINE)
+    merged_df = pd.merge(cross_tab, crosstab_Moneyline, 
+                        left_on=['larger_group', 'bookmaker_name', 'h2h_spread2'], 
+                        right_on=['larger_group', 'bookmaker_name', 'h2h_spread2'], 
+                        how='inner')
 
-    df = df.merge(dff.rename('Full Count'), left_index=True, right_index=True)
-    del colnames, dff, x
+    merged_df = pd.merge(merged_df, cross_tab_Book, 
+                        left_on=['larger_group', 'bookmaker_name'], 
+                        right_on=['larger_group', 'bookmaker_name'], 
+                        how='inner')
 
-    df['Level 2'] = df['Level 2'].astype(str)
 
+    merged_df = pd.merge(merged_df, cross_tab_filtered, 
+                        left_on=['larger_group'], 
+                        right_on=['larger_group'], 
+                        how='inner')
 
-    #print(df['Level 2'])
 
-    ####################################################################3
-    #EXTRACT LOGIC
-    ####################################################################3
+    merged_df = merged_df.rename(columns={
+    'id':'Event ID', 'sport_key':'sport_key','sport_title':'SPORT','bookmakerstitle':'Bookie Formal Name','bookmakerslastupdate':'Bookie Last Update', 
+    'commence_time':'commence_time', 'home_team':'Home Team', 'away_team':'Away Team', 
+    'bookmakersmarketsoutcomesname 0':'Team 1', 'bookmakersmarketsoutcomesname 1':'Team 2','value':'Bet Type', 
+    'bookmakersmarketsoutcomespoint 0':'Spread 1', 'bookmakersmarketsoutcomespoint 1':'Spread 2','bookmakersmarketsoutcomesprice 0':'Moneyline 1', 'bookmakersmarketsoutcomesprice 1':'Moneyline 2',
+    'larger_group':'Game Bracket', 'bookmaker_name':'bookmaker_name', 'h2h_spread2':'h2h_spread2','bookmakerskey':'Bookie'})
 
-    #PARAMETERS
-    Full_Count = df['Full Count']
-    Bet_Type = df['Bet Type']
-    Outcomes = df['Outcomes']
-    MoneyLine = df['Moneyline']
-    Level_4 = df['Level 4']
 
-    #LOGIC PARAMETER CONDITIONS
-    conditions = [(Full_Count == 6) & (Bet_Type == 'title'),
-                (Full_Count == 8) & (Outcomes == 'key'),
+    merged_df = merged_df.drop(columns=['Game Bracket','bookmaker_name', 'h2h_spread2','Bookie'])
+    merged_df = merged_df[['Event ID','sport_key','SPORT', 'Bookie Formal Name','Bookie Last Update','commence_time','Bet Type','Home Team', 'Away Team', 'Team 1','Team 2', 'Spread 1','Spread 2','Moneyline 1', 'Moneyline 2']]
 
-                (Full_Count == 10) & (MoneyLine == 'name') & (Level_4 == '0'),
-                (Full_Count == 10) & (MoneyLine == 'price') & (Level_4 == '0'),
-                (Full_Count == 10) & (MoneyLine == 'point') & (Level_4 == '0'),
 
-                (Full_Count == 10) & (MoneyLine == 'name') & (Level_4 == '1'),
-                (Full_Count == 10) & (MoneyLine == 'price') & (Level_4 == '1'),
-                (Full_Count == 10) & (MoneyLine == 'point') & (Level_4 == '1')
+    merged_df["Home Spread"] = np.where(merged_df["Team 1"] == merged_df["Home Team"], merged_df["Spread 1"], merged_df["Spread 2"])
+    merged_df["Away Spread"] = np.where(merged_df["Team 2"] == merged_df["Away Team"], merged_df["Spread 2"], merged_df["Spread 1"])
+    merged_df["Home Moneyline"] = np.where(merged_df["Team 1"] == merged_df["Home Team"], merged_df["Moneyline 1"], merged_df["Moneyline 2"])
+    merged_df["Away Moneyline"] = np.where(merged_df["Team 2"] == merged_df["Away Team"], merged_df["Moneyline 2"], merged_df["Moneyline 1"])
 
-                ]
-    ##### ADD IN TEAM TWO SEPARATION PARAMETER
 
-    #VALUE CHOICE IF CONDITION MET
-    choices = [df['Value'],
-            df['Value'],
-            df['Value'],
-            df['Value'],
-            df['Value'],
-            df['Value'],
-            df['Value'],
-            df['Value'],
-    ]
+    merged_df = merged_df.drop(columns=['Team 1','Team 2','Moneyline 1','Moneyline 2','Spread 1','Spread 2'])
 
-    #LOGIC FOR METRIC NAMES
-    #Create list length of frame with repetitive value
-    #Repeat for 
-    # 1. Sports Book
-    # 2. Bet Type
-    # 3. Team
-    # 4. Moneyline
-    # 5. Spread 
+    #COMMENCE TIME FIX
+    merged_df['time_string'] = merged_df['commence_time']    
+    merged_df['time'] = pd.to_datetime(merged_df['time_string'], format="%Y-%m-%dT%H:%M:%SZ")
+    merged_df['utc_time'] = merged_df['time'].apply(lambda x: pytz.utc.localize(x))
+    tz_nyc = pytz.timezone('America/New_York')
+    merged_df['nyc_time'] = merged_df['utc_time'].apply(lambda x: x.astimezone(tz_nyc))
 
 
-    l = df.shape[0]
-    Sports_Book =   ['Sports Book' for i in range(l)]
-    Bet_Type =      ['Bet Type' for i in range(l)]
+    # Get the current date and time in New York City
+    merged_df['now'] = datetime.now(tz_nyc)
 
-    Team_1 =          ['Team 1' for i in range(l)]
-    C_Moneyline_1 =   ['Moneyline 1' for i in range(l)]
-    Spread_1 =        ['Spread 1' for i in range(l)]
+    # Format the current time and the converted time as 12-hour time strings
+    merged_df['now_string'] = merged_df['now'].apply(lambda x: x.strftime("%Y-%m-%d %I:%M %p"))
+    merged_df['nyc_time_string'] = merged_df['nyc_time'].apply(lambda x: x.strftime("%Y-%m-%d %I:%M %p"))
+    merged_df["status"] = np.where(merged_df["now"] < merged_df["utc_time"], "Upcoming Game", "Live Game")
 
 
-    Team_2 =          ['Team 2' for i in range(l)]
-    C_Moneyline_2 =   ['Moneyline 2' for i in range(l)]
-    Spread_2 =        ['Spread 2' for i in range(l)]
+    merged_df = merged_df.drop(columns=['time','utc_time','nyc_time','now','time_string'])
 
 
-    #VALUE CHOICE IF CONDITION MET
-    choices2 = [
-            Sports_Book,
-            Bet_Type,
 
-            Team_1,
-            C_Moneyline_1,
-            Spread_1,
-
-            Team_2,
-            C_Moneyline_2,
-            Spread_2
-            ]
-
-
-
-
-    # create a new column in the DF based on the conditions
-    df["Deal Book"] = np.select(conditions, choices, None)
-    df["Metric"] = np.select(conditions, choices2, None)
-
-
-    #Delete Column in Panda DataFrame
-    #del df['Deal Book']
-    #del df['ID']
-
-    #ID BRACKET
-    df['ID'] = df['Level 1'] + df['Level 2'].astype(str)
-
-
-    del Bet_Type, Full_Count, MoneyLine, Outcomes, choices, conditions, choices2, Level_4
-    del Team_1, Team_2, Spread_1, Spread_2, C_Moneyline_2, C_Moneyline_1
-    del Sports_Book, l
-
-    ####################################################################3
-    #CROSS TAB LOGIC
-    ####################################################################3
-
-    dff = df.copy()
-    dff  = dff[['ID','Metric','Deal Book','Level 3','Level 1']]
-
-
-    #SUBSET THEN DELETE - RENAME COLUMN
-
-    # selecting rows based on condition
-    dff_b = dff.loc[dff['Metric'] == 'Bet Type']
-    dff_b.columns = ['ID','Metric', 'Bet Type', 'Bet ID', 'Level 1']
-    dff_b = dff_b[['ID','Bet Type', 'Bet ID', 'Level 1']]
-
-
-    #LIVE GAME TAG
-    dff_id = df.loc[df['Bookmaker'] == 'id']
-    dff_id = dff_id[['Level 1', 'Value']]
-
-
-    #REMOVE EXTRA FIELD
-    dff = dff[['ID','Metric','Deal Book','Level 3']]
-
-    dff_t1 = dff.loc[dff['Metric'] == 'Team 1']
-    dff_t1.columns = ['ID','Metric', 'Team 1', 'Bet ID']
-    dff_t1 = dff_t1[['ID','Team 1', 'Bet ID']]
-
-    dff_t2 = dff.loc[dff['Metric'] == 'Team 2']
-    dff_t2.columns = ['ID','Metric', 'Team 2', 'Bet ID']
-    dff_t2 = dff_t2[['ID','Team 2', 'Bet ID']]
-
-    dff_m1 = dff.loc[dff['Metric'] == 'Moneyline 1']
-    dff_m1.columns = ['ID','Metric', 'Moneyline 1', 'Bet ID']
-    dff_m1 = dff_m1[['ID','Moneyline 1', 'Bet ID']]
-
-    dff_m2 = dff.loc[dff['Metric'] == 'Moneyline 2']
-    dff_m2.columns = ['ID','Metric', 'Moneyline 2', 'Bet ID']
-    dff_m2 = dff_m2[['ID','Moneyline 2', 'Bet ID']]
-
-
-    dff_s1 = dff.loc[dff['Metric'] == 'Spread 1']
-    dff_s1.columns = ['ID','Metric', 'Spread 1', 'Bet ID']
-    dff_s1 = dff_s1[['ID','Spread 1', 'Bet ID']]
-
-    dff_s2 = dff.loc[dff['Metric'] == 'Spread 2']
-    dff_s2.columns = ['ID','Metric', 'Spread 2', 'Bet ID']
-    dff_s2 = dff_s2[['ID','Spread 2', 'Bet ID']]
-
-
-    dff_sportsbook = dff.loc[dff['Metric'] == 'Sports Book']
-    dff_sportsbook.columns = ['ID','Metric', 'Sports Book', 'Bet ID']
-    dff_sportsbook = dff_sportsbook[['ID','Sports Book', 'Bet ID']]
-
-
-
-    df2 = pd.merge(dff_b, dff_id,  how='left', left_on=['Level 1'], right_on = ['Level 1'])
-
-    df2 = pd.merge(df2, dff_t1,  how='left', left_on=['ID','Bet ID'], right_on = ['ID','Bet ID'])
-    df2 = pd.merge(df2, dff_t2,  how='left', left_on=['ID','Bet ID'], right_on = ['ID','Bet ID'])
-
-    df2 = pd.merge(df2, dff_m1,  how='left', left_on=['ID','Bet ID'], right_on = ['ID','Bet ID'])
-    df2 = pd.merge(df2, dff_m2,  how='left', left_on=['ID','Bet ID'], right_on = ['ID','Bet ID'])
-
-    df2 = pd.merge(df2, dff_s1,  how='left', left_on=['ID','Bet ID'], right_on = ['ID','Bet ID'])
-    df2 = pd.merge(df2, dff_s2,  how='left', left_on=['ID','Bet ID'], right_on = ['ID','Bet ID'])
-
-    df2 = pd.merge(df2, dff_sportsbook,  how='left', left_on=['ID'], right_on = ['ID'])
-
-    #print(df2.columns)
-
-    df2 = df2[['Sports Book','ID','Value','Bet ID_x','Bet Type', 'Team 1','Moneyline 1','Spread 1','Team 2','Moneyline 2','Spread 2']]
-    return df2
-
-
-#POST DATA RUN DELETE
-#del dff, dff_b, dff_id, dff_m1, dff_m2, dff_s1, dff_s2, dff_sportsbook, dff_t1, dff_t2
+    return merged_df
