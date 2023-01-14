@@ -15,3 +15,13 @@ message = client.messages.create(
 )
 
 print(message.sid)
+
+
+#IMMEDIATE NEXT STEPS
+#account_sid, 
+#auth_token, 
+#from, 
+#to, 
+#API sportsfeed, 
+#API Odds jam
+

@@ -109,6 +109,11 @@ def data_prep(df):
     # Get the current date and time in New York City
     merged_df['now'] = datetime.now(tz_nyc)
 
+    #Get the Updated Time
+
+    #Calculate the Difference
+
+
     # Format the current time and the converted time as 12-hour time strings
     merged_df['now_string'] = merged_df['now'].apply(lambda x: x.strftime("%Y-%m-%d %I:%M %p"))
     merged_df['nyc_time_string'] = merged_df['nyc_time'].apply(lambda x: x.strftime("%Y-%m-%d %I:%M %p"))

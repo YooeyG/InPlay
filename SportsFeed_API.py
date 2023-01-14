@@ -1,6 +1,12 @@
-from Settings import api_key, STATUS, LEAGUE, today_string, requests
+from Settings import STATUS, LEAGUE, today_string, requests
 import pandas as pd
 from Flatten_Dict import flatten_json
+import os
+from dotenv import load_dotenv    
+
+#Environment Variables Load
+load_dotenv()
+
 
 
 def process_metric_name(name):
@@ -18,7 +24,7 @@ def SportsFeed():
     querystring = {"status":STATUS, "league":LEAGUE, "date":today_string}
 
     headers = {
-        "X-RapidAPI-Key": "c56058d507mshe08ef7f5a175d0cp194176jsn8122f72c24d7",
+        "X-RapidAPI-Key": os.getenv('X-RapidAPI-Key'),
         "X-RapidAPI-Host": "sportspage-feeds.p.rapidapi.com"
     }
 
@@ -59,7 +65,7 @@ def SportsFeed():
 
     dfz = pd.DataFrame(columns=column_names)
     dfz = dfz.append(dfs_pivoted)
-    print(dfz.dtypes)
+    #print(dfz.dtypes)
 
     dfz[['scoreboard_score_away', 'scoreboard_score_home']] = dfz[['scoreboard_score_away', 'scoreboard_score_home']].apply(pd.to_numeric)
     dfz = dfz[['lastUpdated','scoreboard_currentPeriod','scoreboard_periodTimeRemaining','teams_home_team', 'scoreboard_score_home', 'teams_away_team','scoreboard_score_away']]

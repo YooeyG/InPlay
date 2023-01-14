@@ -3,6 +3,8 @@ from __future__ import print_function
 from datetime import date
 from datetime import datetime
 
+from dotenv import load_dotenv    
+
 import sys
 import json
 import requests
@@ -10,19 +12,17 @@ import time
 import sys
 import os
 
-
 # The sys.prefix attribute returns the installation prefix of the current Python environment
 virtual_environment_path = sys.prefix
 virtual_environment_name = os.path.basename(virtual_environment_path)
 print("Environment location:", virtual_environment_name)
 print("")
 
-'META DATA'
-api_key = 'e6a9e9cfd798098ed200b73cb0201f60'
-
+#Environment Variables
+load_dotenv()
 
 'ODDS JAM API SETTINGS'
-API_KEY = api_key
+API_KEY = os.getenv('api_key')
 SPORT = 'NBA' # use the sport_key from the /sports endpoint below, or use 'upcoming' to see the next 8 games across allsports
 REGIONS = 'us' # uk | us | eu | au. Multiple can be specified if comma delimited
 MARKETS = 'h2h,spreads' # h2h | spreads | totals. Multiple can be specified if comma delimited
@@ -31,7 +31,7 @@ DATE_FORMAT = 'iso' # iso | unix
 
 
 'SPORTSFEED API SETTINGS'
-STATUS = 'scheduled' #scheduled, in progress, final, canceled, delayed
+STATUS = 'in progress' #scheduled, in progress, final, canceled, delayed
 LEAGUE = 'NBA' #League Options NFL, NBA, MLB, NHL, NCAAF, or NCAAB
 
 #DATE
@@ -64,6 +64,7 @@ print(f"Import path: {dir}")
 print("")
 print("Environmental Search Paths:", *sys.path,sep='\n')    
 print("")
+print('API',API_KEY)
 
 'GLOBALS VARIABLE PRINTOUTS'
 #print()
