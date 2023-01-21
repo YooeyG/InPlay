@@ -31,7 +31,7 @@ DATE_FORMAT = 'iso' # iso | unix
 
 
 'SPORTSFEED API SETTINGS'
-STATUS = 'in progress' #scheduled, in progress, final, canceled, delayed
+STATUS = 'scheduled' #scheduled, in progress, final, canceled, delayed
 LEAGUE = 'NBA' #League Options NFL, NBA, MLB, NHL, NCAAF, or NCAAB
 
 #DATE

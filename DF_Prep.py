@@ -124,4 +124,52 @@ def data_prep(df):
 
 
 
+    #NEW ADD ONS FOR 538 MERGE
+    # Convert the 'commence_time' column to datetime format
+    merged_df['commence_date'] = pd.to_datetime(merged_df['commence_time'])
+
+    # Set the timezone to EST
+    est = pytz.timezone('US/Eastern')
+
+    # Convert the 'commence_time' column to EST
+    merged_df['commence_date'] = merged_df['commence_date'].dt.tz_convert(est)
+
+    # Format the date in the desired format
+    merged_df['commence_date'] = merged_df['commence_date'].dt.strftime('%Y-%m-%d')
+
+
+    #CONVERT BOOKIE UPDATE TO EST TIME
+    merged_df['Bookie_Update'] = pd.to_datetime(merged_df['Bookie Last Update'], format="%Y-%m-%dT%H:%M:%SZ")
+    merged_df['utc_time_bookie'] = merged_df['Bookie_Update'].apply(lambda x: pytz.utc.localize(x))
+    merged_df['Bookie_Update'] = merged_df['utc_time_bookie'].apply(lambda x: x.astimezone(tz_nyc))
+    merged_df['Bookie_Update'] = merged_df['Bookie_Update'].apply(lambda x: x.strftime("%Y-%m-%d %I:%M %p"))
+
+
+
+    #LAST BOOKIE UPDATE
+    merged_df['Bookie Last Update'] = pd.to_datetime(merged_df['Bookie Last Update'])
+    merged_df['Bookie Last Update'] = merged_df['Bookie Last Update'].dt.tz_convert('US/Eastern').dt.floor('s')
+
+    merged_df['current_time'] = datetime.now(pytz.timezone('US/Eastern'))
+
+    #current_time = pd.datetime.now(pytz.timezone('US/Eastern'))
+    merged_df['time_diff'] = merged_df['current_time'] - merged_df['Bookie Last Update']
+    
+    total_seconds = merged_df['time_diff'].dt.total_seconds()
+    merged_df['minutes'], merged_df['seconds'] = divmod(total_seconds, 60)
+
+    #print(merged_df.columns)
+
+    
+    #time_diff_min, time_diff_sec = divmod(time_diff.iloc[0].total_seconds(), 60)
+    #merged_df['Time_Difference_minutes_seconds'] = f"{time_diff_min} minutes and {time_diff_sec} seconds"
+
+    #print(merged_df[['time_diff','minutes', 'seconds','Bookie_Update','now_string']])
+
+
+
     return merged_df
+
+
+#burger buns, Cheese, Onion and tomatoe
+
